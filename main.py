@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 import crud
 import models
 import schemas
+import security
 from database import SessionLocal, init_db
 
 
@@ -40,5 +41,12 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)) ->
 
 
 @app.post("/api/auth/login")
-def login_user(_: OAuth2PasswordRequestForm = Depends()) -> dict[str, str]:
-	return {"access_token": "fake-jwt-token-for-now", "token_type": "bearer"}
+def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> dict[str, str]:
+	user = crud.get_user_by_email(db, form_data.username)
+	if user is None:
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+	if not security.verify_password(form_data.password, user.hashed_password):
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+	token = security.create_access_token({"sub": user.email})
+	return {"access_token": token, "token_type": "bearer"}

@@ -11,8 +11,12 @@ def _hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return db.query(User).filter(User.email == email).first()
+
+
 def create_user(db: Session, user_in: UserCreate) -> User:
-    if db.query(User).filter(User.email == user_in.email).first() is not None:
+    if get_user_by_email(db, user_in.email) is not None:
         raise ValueError("Email already registered")
 
     user = User(
