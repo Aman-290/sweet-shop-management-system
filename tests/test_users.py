@@ -1,7 +1,5 @@
 import sys
 from pathlib import Path
-from uuid import uuid4
-
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from fastapi.testclient import TestClient
@@ -12,7 +10,7 @@ client = TestClient(app)
 
 
 def test_read_current_user_success() -> None:
-    email = f"user_{uuid4().hex}@example.com"
+    email = "test@example.com"
     password = "password123"
 
     register_payload = {"email": email, "password": password}
