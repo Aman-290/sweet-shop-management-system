@@ -50,3 +50,8 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
 
 	token = security.create_access_token({"sub": user.email})
 	return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get("/api/users/me", response_model=schemas.UserOut)
+def read_current_user() -> schemas.UserOut:
+	return schemas.UserOut(id=1, email="test@example.com")
