@@ -287,16 +287,31 @@ def purchase_sweet(
 @app.post("/api/sweets/{sweet_id}/restock", response_model=schemas.Sweet)
 def restock_sweet(
 	sweet_id: int,
-	_: dict,
+	restock_request: schemas.RestockRequest,
+	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> schemas.Sweet:
-	"""Restock a sweet (placeholder implementation)."""
+	"""Restock a sweet owned by the authenticated user.
 
-	return schemas.Sweet(
-		id=sweet_id,
-		name="Restocked Sweet",
-		category="Any",
-		price=2.50,
-		quantity=60,
-		owner_id=current_user.id,
-	)
+	Args:
+		sweet_id: Identifier of the sweet to restock.
+		restock_request: Payload containing the quantity to add.
+		db: Database session injected by FastAPI.
+		current_user: The authenticated user performing the restock.
+
+	Returns:
+		The updated sweet model serialized via response schema.
+
+	Raises:
+		HTTPException: If the sweet does not exist or is not owned by the user.
+	"""
+
+	sweet = crud.get_sweet(db, sweet_id)
+	if sweet is None or sweet.owner_id != current_user.id:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	updated = crud.restock_sweet(db, sweet_id, restock_request.quantity)
+	if updated is None:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	return updated

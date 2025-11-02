@@ -36,3 +36,9 @@ class SweetUpdate(BaseModel):
     category: str | None = None
     price: float | None = None
     quantity: int | None = None
+
+
+class RestockRequest(BaseModel):
+    """Payload for restocking a sweet by increasing its quantity."""
+
+    quantity: int

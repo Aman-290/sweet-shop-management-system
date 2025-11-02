@@ -221,3 +221,25 @@ def purchase_sweet(db: Session, sweet_id: int) -> Sweet | str | None:
     db.commit()
     db.refresh(sweet)
     return sweet
+
+
+def restock_sweet(db: Session, sweet_id: int, quantity_to_add: int) -> Sweet | None:
+    """Increase a sweet's available quantity.
+
+    Args:
+        db: Active SQLAlchemy session.
+        sweet_id: Identifier of the sweet to restock.
+        quantity_to_add: Amount to increment the sweet's quantity by.
+
+    Returns:
+        The updated sweet instance if the restock succeeds; otherwise None when the sweet does not exist.
+    """
+
+    sweet = get_sweet(db, sweet_id)
+    if sweet is None:
+        return None
+
+    sweet.quantity += quantity_to_add
+    db.commit()
+    db.refresh(sweet)
+    return sweet
