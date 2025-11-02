@@ -203,18 +203,49 @@ def update_sweet(
 @app.delete("/api/sweets/{sweet_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_sweet(
 	sweet_id: int,
+	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> None:
-	"""Delete a sweet (placeholder implementation)."""
+	"""Delete a sweet owned by the authenticated user.
 
-	return None
+	Args:
+		sweet_id: Identifier of the sweet to remove.
+		db: Database session injected by FastAPI.
+		current_user: The authenticated user performing the deletion.
+
+	Raises:
+		HTTPException: If the sweet does not exist or is not owned by the user.
+	"""
+
+	sweet = crud.get_sweet(db, sweet_id)
+	if sweet is None or sweet.owner_id != current_user.id:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	crud.delete_sweet(db, sweet_id)
 
 
 @app.get("/api/sweets/{sweet_id}", response_model=schemas.Sweet)
 def get_sweet(
 	sweet_id: int,
+	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> schemas.Sweet:
-	"""Retrieve a sweet by its identifier (placeholder implementation)."""
+	"""Retrieve a sweet owned by the authenticated user.
 
-	raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+	Args:
+		sweet_id: Identifier of the sweet to fetch.
+		db: Database session supplied by FastAPI.
+		current_user: The authenticated user requesting the sweet.
+
+	Returns:
+		The sweet model serialized via response schema.
+
+	Raises:
+		HTTPException: If the sweet does not exist or is not owned by the user.
+	"""
+
+	sweet = crud.get_sweet(db, sweet_id)
+	if sweet is None or sweet.owner_id != current_user.id:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	return sweet

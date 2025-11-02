@@ -175,3 +175,23 @@ def update_sweet(db: Session, sweet_id: int, sweet_update: SweetUpdate) -> Sweet
     db.commit()
     db.refresh(sweet)
     return sweet
+
+
+def delete_sweet(db: Session, sweet_id: int) -> Sweet | None:
+    """Remove a sweet from the database.
+
+    Args:
+        db: Active SQLAlchemy session.
+        sweet_id: Identifier of the sweet to delete.
+
+    Returns:
+        The deleted sweet instance if it existed; otherwise None.
+    """
+
+    sweet = get_sweet(db, sweet_id)
+    if sweet is None:
+        return None
+
+    db.delete(sweet)
+    db.commit()
+    return sweet
