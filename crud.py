@@ -1,8 +1,8 @@
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from models import User
-from schemas import UserCreate
+from models import Sweet, User
+from schemas import SweetCreate, UserCreate
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -50,3 +50,26 @@ def create_user(db: Session, user_in: UserCreate) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def create_sweet(db: Session, sweet_in: SweetCreate) -> Sweet:
+    """Persist a sweet to the database for the given payload.
+
+    Args:
+        db: Active SQLAlchemy session.
+        sweet_in: Validated sweet payload provided by the client.
+
+    Returns:
+        The newly created sweet record.
+    """
+
+    sweet = Sweet(
+        name=sweet_in.name,
+        category=sweet_in.category,
+        price=sweet_in.price,
+        quantity=sweet_in.quantity,
+    )
+    db.add(sweet)
+    db.commit()
+    db.refresh(sweet)
+    return sweet

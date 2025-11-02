@@ -94,22 +94,21 @@ def read_current_user(current_user: models.User = Depends(security.get_current_u
 	return current_user
 
 
-@app.post("/api/sweets", status_code=status.HTTP_201_CREATED)
-def create_sweet(_: dict, current_user: models.User = Depends(security.get_current_user)) -> dict[str, object]:
-	"""Create a new sweet resource (placeholder implementation).
+@app.post("/api/sweets", response_model=schemas.Sweet, status_code=status.HTTP_201_CREATED)
+def create_sweet(
+	sweet_in: schemas.SweetCreate,
+	db: Session = Depends(get_db),
+	current_user: models.User = Depends(security.get_current_user),
+) -> models.Sweet:
+	"""Persist a new sweet and associate it with the authenticated user.
 
 	Args:
-		_: Incoming sweet payload (ignored during placeholder phase).
-		current_user: Authenticated user (unused placeholder parameter).
+		sweet_in: Validated payload describing the sweet to create.
+		db: Database session injected by FastAPI.
+		current_user: The authenticated user initiating the request.
 
 	Returns:
-		A hardcoded sweet representation satisfying the test expectations.
+		The persisted sweet model serialized via response schema.
 	"""
 
-	return {
-		"id": 1,
-		"name": "Chocolate Eclair",
-		"category": "Pastry",
-		"price": 2.50,
-		"quantity": 10,
-	}
+	return crud.create_sweet(db, sweet_in)
