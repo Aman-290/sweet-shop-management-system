@@ -198,3 +198,23 @@ def update_sweet(
 	updated = crud.update_sweet(db, sweet_id, sweet_update)
 	assert updated is not None
 	return updated
+
+
+@app.delete("/api/sweets/{sweet_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_sweet(
+	sweet_id: int,
+	current_user: models.User = Depends(security.get_current_user),
+) -> None:
+	"""Delete a sweet (placeholder implementation)."""
+
+	return None
+
+
+@app.get("/api/sweets/{sweet_id}", response_model=schemas.Sweet)
+def get_sweet(
+	sweet_id: int,
+	current_user: models.User = Depends(security.get_current_user),
+) -> schemas.Sweet:
+	"""Retrieve a sweet by its identifier (placeholder implementation)."""
+
+	raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
