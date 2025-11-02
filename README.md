@@ -31,19 +31,19 @@ This project was completed as a technical assessment for Incubyte Consulting LLP
 Below are key screens of the app end-to-end. Images are in the `screenshot/` folder.
 
 ### Signup
-![Signup](./screenshot/pic5.png)
+![Signup](./screenshot/pic1.png)
 
 ### User Dashboard
-![User Dashboard](./screenshot/pic1.png)
-
-### User Dashboard (after items added)
-![User Dashboard - Items](./screenshot/pic2.png)
+![User Dashboard](./screenshot/pic5.png)
 
 ### Admin Dashboard
 ![Admin Dashboard](./screenshot/pic3.png)
 
+### Admin Dashboard (after items added)
+![User Dashboard - Items](./screenshot/pic4.png)
+
 ### Add New Sweet (Admin)
-![Add New Sweet](./screenshot/pic4.png)
+![Add New Sweet](./screenshot/pic2.png)
 
 ## ✨ Core Features
 
