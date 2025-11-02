@@ -94,3 +94,45 @@ def get_sweets(db: Session, skip: int = 0, limit: int = 100, owner_id: int | Non
     if owner_id is not None:
         query = query.filter(Sweet.owner_id == owner_id)
     return query.offset(skip).limit(limit).all()
+
+
+def search_sweets(
+    db: Session,
+    name: str | None = None,
+    category: str | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    owner_id: int | None = None,
+) -> list[Sweet]:
+    """Search sweets using optional filters for name, category, price range, and owner.
+
+    Args:
+        db: Active SQLAlchemy session.
+        name: Optional name fragment to match (case-insensitive).
+        category: Optional category to filter by.
+        min_price: Optional lower bound for the sweet price.
+        max_price: Optional upper bound for the sweet price.
+        owner_id: Optional user identifier to filter sweets by owner.
+
+    Returns:
+        A list of sweets satisfying the supplied filters.
+    """
+
+    query = db.query(Sweet)
+
+    if owner_id is not None:
+        query = query.filter(Sweet.owner_id == owner_id)
+
+    if name:
+        query = query.filter(Sweet.name.ilike(f"%{name}%"))
+
+    if category:
+        query = query.filter(Sweet.category == category)
+
+    if min_price is not None:
+        query = query.filter(Sweet.price >= min_price)
+
+    if max_price is not None:
+        query = query.filter(Sweet.price <= max_price)
+
+    return query.all()

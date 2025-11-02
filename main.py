@@ -138,34 +138,32 @@ def list_sweets(
 
 @app.get("/api/sweets/search", response_model=list[schemas.Sweet])
 def search_sweets(
-	name: str,
+	name: str | None = None,
+	category: str | None = None,
+	min_price: float | None = None,
+	max_price: float | None = None,
+	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
-) -> list[schemas.Sweet]:
-	"""Search sweets matching the provided name fragment (placeholder implementation).
+) -> list[models.Sweet]:
+	"""Search sweets using optional filters for name, category, or price range.
 
 	Args:
-		name: Name fragment to filter sweets by (ignored during placeholder phase).
+		name: Optional name fragment to match (case-insensitive).
+		category: Optional category to filter by.
+		min_price: Optional lower bound for the sweet price.
+		max_price: Optional upper bound for the sweet price.
+		db: Database session injected via dependency.
 		current_user: The authenticated user initiating the request.
 
 	Returns:
-		A hardcoded list of sweets matching the expected response size.
+		A list of sweets that satisfy the supplied filters.
 	"""
 
-	return [
-		schemas.Sweet(
-			id=1,
-			name="A Chocolate Sweet",
-			category="Pastry",
-			price=2.50,
-			quantity=10,
-			owner_id=current_user.id,
-		),
-		schemas.Sweet(
-			id=2,
-			name="Another Chocolate Sweet",
-			category="Candy",
-			price=1.00,
-			quantity=50,
-			owner_id=current_user.id,
-		),
-	]
+	return crud.search_sweets(
+		db,
+		name=name,
+		category=category,
+		min_price=min_price,
+		max_price=max_price,
+		owner_id=current_user.id,
+	)
