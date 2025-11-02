@@ -28,25 +28,22 @@ This project was completed as a technical assessment for Incubyte Consulting LLP
 
 ## 📸 Screenshots
 
-### Customer Dashboard
-![Customer Dashboard](screenshot/pic1.png)
-*Customer view showing available sweets with search and filter options*
+Below are key screens of the app end-to-end. Images are in the `screenshot/` folder.
 
-### Admin Dashboard with Real-time Updates
-![Admin Dashboard](screenshot/pic2.png)
-*Admin panel displaying real-time inventory management with WebSocket updates*
+### Signup
+![Signup](./screenshot/pic5.png)
 
-### Admin Management Panel
-![Admin Sweet Management](screenshot/pic3.png)
-*Admin interface for managing sweets with edit, delete, and restock options*
+### User Dashboard
+![User Dashboard](./screenshot/pic1.png)
 
-### Adding New Sweet
-![Add New Sweet Form](screenshot/pic4.png)
-*Admin form for creating new sweet items with name, category, price, and quantity*
+### User Dashboard (after items added)
+![User Dashboard - Items](./screenshot/pic2.png)
 
-### User Registration
-![Sign Up Page](screenshot/pic5.png)
-*User registration page for creating new customer accounts*
+### Admin Dashboard
+![Admin Dashboard](./screenshot/pic3.png)
+
+### Add New Sweet (Admin)
+![Add New Sweet](./screenshot/pic4.png)
 
 ## ✨ Core Features
 
