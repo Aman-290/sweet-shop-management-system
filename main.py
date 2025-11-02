@@ -254,15 +254,31 @@ def get_sweet(
 @app.post("/api/sweets/{sweet_id}/purchase", response_model=schemas.Sweet)
 def purchase_sweet(
 	sweet_id: int,
+	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> schemas.Sweet:
-	"""Purchase a sweet (placeholder implementation)."""
+	"""Purchase a sweet by reducing its quantity by one.
 
-	return schemas.Sweet(
-		id=sweet_id,
-		name="Purchased Sweet",
-		category="Any",
-		price=2.50,
-		quantity=9,
-		owner_id=current_user.id,
-	)
+	Args:
+		sweet_id: Identifier of the sweet to purchase.
+		db: Database session provided by FastAPI.
+		current_user: The authenticated user executing the purchase.
+
+	Returns:
+		The updated sweet model after the purchase.
+
+	Raises:
+		HTTPException: If the sweet is not found or if it is out of stock.
+	"""
+
+	sweet = crud.get_sweet(db, sweet_id)
+	if sweet is None or sweet.owner_id != current_user.id:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	result = crud.purchase_sweet(db, sweet_id)
+	if result is None:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+	if result == "out_of_stock":
+		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sweet is out of stock")
+
+	return result

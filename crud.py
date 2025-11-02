@@ -195,3 +195,29 @@ def delete_sweet(db: Session, sweet_id: int) -> Sweet | None:
     db.delete(sweet)
     db.commit()
     return sweet
+
+
+def purchase_sweet(db: Session, sweet_id: int) -> Sweet | str | None:
+    """Handle the purchase of a sweet by decrementing its quantity.
+
+    Args:
+        db: Active SQLAlchemy session.
+        sweet_id: Identifier of the sweet to purchase.
+
+    Returns:
+        The updated sweet instance if the purchase succeeds.
+        The string "out_of_stock" if the sweet has no remaining quantity.
+        None if the sweet does not exist.
+    """
+
+    sweet = get_sweet(db, sweet_id)
+    if sweet is None:
+        return None
+
+    if sweet.quantity <= 0:
+        return "out_of_stock"
+
+    sweet.quantity -= 1
+    db.commit()
+    db.refresh(sweet)
+    return sweet
