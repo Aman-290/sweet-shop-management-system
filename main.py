@@ -249,3 +249,20 @@ def get_sweet(
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
 
 	return sweet
+
+
+@app.post("/api/sweets/{sweet_id}/purchase", response_model=schemas.Sweet)
+def purchase_sweet(
+	sweet_id: int,
+	current_user: models.User = Depends(security.get_current_user),
+) -> schemas.Sweet:
+	"""Purchase a sweet (placeholder implementation)."""
+
+	return schemas.Sweet(
+		id=sweet_id,
+		name="Purchased Sweet",
+		category="Any",
+		price=2.50,
+		quantity=9,
+		owner_id=current_user.id,
+	)
