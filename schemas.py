@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    role: str = "customer"  # Default to customer, can be overridden for testing
 
 
 class UserOut(BaseModel):
@@ -11,6 +12,7 @@ class UserOut(BaseModel):
 
     id: int
     email: EmailStr
+    role: str
 
 
 class SweetCreate(BaseModel):

@@ -1,21 +1,11 @@
-import sys
-from pathlib import Path
 from uuid import uuid4
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from fastapi.testclient import TestClient
-
-from main import app
-
-client = TestClient(app)
-
-
-def test_create_sweet_success() -> None:
+def test_create_sweet_success(client) -> None:
     email = f"sweet_tester_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 
@@ -41,11 +31,11 @@ def test_create_sweet_success() -> None:
     assert body.get("category") == sweet_payload["category"]
 
 
-def test_get_all_sweets_success() -> None:
+def test_get_all_sweets_success(client) -> None:
     email = f"sweet_list_tester_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 
@@ -84,11 +74,11 @@ def test_get_all_sweets_success() -> None:
     assert data[0]["name"] == sweet_one["name"]
 
 
-def test_search_sweets_by_name() -> None:
+def test_search_sweets_by_name(client) -> None:
     email = f"sweet_search_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 
@@ -117,11 +107,11 @@ def test_search_sweets_by_name() -> None:
     assert len(data) == 2
 
 
-def test_update_sweet_success() -> None:
+def test_update_sweet_success(client) -> None:
     email = f"sweet_update_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 
@@ -153,11 +143,11 @@ def test_update_sweet_success() -> None:
     assert body["quantity"] == 5
 
 
-def test_delete_sweet_success() -> None:
+def test_delete_sweet_success(client) -> None:
     email = f"sweet_delete_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 

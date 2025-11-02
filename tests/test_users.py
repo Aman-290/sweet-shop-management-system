@@ -1,15 +1,4 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-from fastapi.testclient import TestClient
-
-from main import app
-
-client = TestClient(app)
-
-
-def test_read_current_user_success() -> None:
+def test_read_current_user_success(client) -> None:
     email = "test@example.com"
     password = "password123"
 

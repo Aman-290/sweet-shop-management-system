@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -28,6 +29,15 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 init_db()
 
 
@@ -47,7 +57,7 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)) ->
 	"""
 
 	try:
-		user = crud.create_user(db, user_in)
+		user = crud.create_user(db, user_in, role=user_in.role)
 	except ValueError as exc:
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 	return user
@@ -80,6 +90,21 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
 	return {"access_token": token, "token_type": "bearer"}
 
 
+@app.get("/api/auth/me", response_model=schemas.UserOut)
+def get_current_user_info(
+	current_user: models.User = Depends(security.get_current_user),
+) -> models.User:
+	"""Retrieve the authenticated user's information.
+
+	Args:
+		current_user: The authenticated user from the token.
+
+	Returns:
+		The user model with id, email, and role.
+	"""
+	return current_user
+
+
 @app.get("/api/users/me", response_model=schemas.UserOut)
 def read_current_user(current_user: models.User = Depends(security.get_current_user)) -> models.User:
 	"""Return the authenticated user's profile information.
@@ -98,14 +123,16 @@ def read_current_user(current_user: models.User = Depends(security.get_current_u
 def create_sweet(
 	sweet_in: schemas.SweetCreate,
 	db: Session = Depends(get_db),
-	current_user: models.User = Depends(security.get_current_user),
+	current_user: models.User = Depends(security.require_admin),
 ) -> models.Sweet:
 	"""Persist a new sweet and associate it with the authenticated user.
+	
+	Admin access required.
 
 	Args:
 		sweet_in: Validated payload describing the sweet to create.
 		db: Database session injected by FastAPI.
-		current_user: The authenticated user initiating the request.
+		current_user: The authenticated admin user initiating the request.
 
 	Returns:
 		The persisted sweet model serialized via response schema.
@@ -174,15 +201,17 @@ def update_sweet(
 	sweet_id: int,
 	sweet_update: schemas.SweetUpdate,
 	db: Session = Depends(get_db),
-	current_user: models.User = Depends(security.get_current_user),
+	current_user: models.User = Depends(security.require_admin),
 ) -> schemas.Sweet:
 	"""Update an existing sweet belonging to the authenticated user.
+	
+	Admin access required.
 
 	Args:
 		sweet_id: Identifier of the sweet to modify.
 		sweet_update: Payload specifying fields and values to update.
 		db: Database session injected by FastAPI.
-		current_user: The authenticated user performing the update.
+		current_user: The authenticated admin user performing the update.
 
 	Returns:
 		The updated sweet serialized via the response schema.
@@ -204,14 +233,16 @@ def update_sweet(
 def delete_sweet(
 	sweet_id: int,
 	db: Session = Depends(get_db),
-	current_user: models.User = Depends(security.get_current_user),
+	current_user: models.User = Depends(security.require_admin),
 ) -> None:
 	"""Delete a sweet owned by the authenticated user.
+	
+	Admin access required.
 
 	Args:
 		sweet_id: Identifier of the sweet to remove.
 		db: Database session injected by FastAPI.
-		current_user: The authenticated user performing the deletion.
+		current_user: The authenticated admin user performing the deletion.
 
 	Raises:
 		HTTPException: If the sweet does not exist or is not owned by the user.
@@ -289,15 +320,17 @@ def restock_sweet(
 	sweet_id: int,
 	restock_request: schemas.RestockRequest,
 	db: Session = Depends(get_db),
-	current_user: models.User = Depends(security.get_current_user),
+	current_user: models.User = Depends(security.require_admin),
 ) -> schemas.Sweet:
 	"""Restock a sweet owned by the authenticated user.
+	
+	Admin access required.
 
 	Args:
 		sweet_id: Identifier of the sweet to restock.
 		restock_request: Payload containing the quantity to add.
 		db: Database session injected by FastAPI.
-		current_user: The authenticated user performing the restock.
+		current_user: The authenticated admin user performing the restock.
 
 	Returns:
 		The updated sweet model serialized via response schema.

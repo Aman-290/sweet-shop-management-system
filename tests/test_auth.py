@@ -1,26 +1,15 @@
-import sys
-from pathlib import Path
-
-db_file = Path("sweetshop.db")
-if db_file.exists():
-    db_file.unlink()
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-from fastapi.testclient import TestClient
-
-from main import app
-
-client = TestClient(app)
-
-
-def test_register_user_success() -> None:
+def test_register_user_success(client) -> None:
     payload = {"email": "register@example.com", "password": "password123"}
     response = client.post("/api/auth/register", json=payload)
     assert response.status_code == 201
+    data = response.json()
+    assert "email" in data
+    assert data["email"] == "register@example.com"
+    assert "role" in data
+    assert data["role"] == "customer"  # Default role
 
 
-def test_login_user_success() -> None:
+def test_login_user_success(client) -> None:
     registration_payload = {"email": "login@example.com", "password": "password123"}
     register_response = client.post("/api/auth/register", json=registration_payload)
     assert register_response.status_code == 201

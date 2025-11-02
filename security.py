@@ -85,3 +85,35 @@ def get_current_user(
     if user is None:
         raise credentials_error
     return user
+
+
+def get_password_hash(password: str) -> str:
+    """Hash a plaintext password using bcrypt.
+
+    Args:
+        password: The plaintext password to hash.
+
+    Returns:
+        The bcrypt hash of the password.
+    """
+    return pwd_context.hash(password)
+
+
+def require_admin(current_user: Annotated[models.User, Depends(get_current_user)]) -> models.User:
+    """Verify that the current user has admin role.
+
+    Args:
+        current_user: The authenticated user from the token.
+
+    Returns:
+        The current user if they are an admin.
+
+    Raises:
+        HTTPException: If the user does not have admin role.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user

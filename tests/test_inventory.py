@@ -1,21 +1,11 @@
-import sys
-from pathlib import Path
 from uuid import uuid4
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from fastapi.testclient import TestClient
-
-from main import app
-
-client = TestClient(app)
-
-
-def test_purchase_sweet_success() -> None:
+def test_purchase_sweet_success(client) -> None:
     email = f"inventory_purchase_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 
@@ -44,11 +34,11 @@ def test_purchase_sweet_success() -> None:
     assert body["quantity"] == sweet_payload["quantity"] - 1
 
 
-def test_restock_sweet_success() -> None:
+def test_restock_sweet_success(client) -> None:
     email = f"inventory_restock_{uuid4().hex}@example.com"
     password = "password123"
 
-    register_payload = {"email": email, "password": password}
+    register_payload = {"email": email, "password": password, "role": "admin"}
     register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 201
 

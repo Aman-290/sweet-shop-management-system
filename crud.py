@@ -25,12 +25,13 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.query(User).filter(User.email == email).first()
 
 
-def create_user(db: Session, user_in: UserCreate) -> User:
+def create_user(db: Session, user_in: UserCreate, role: str = "customer") -> User:
     """Persist a new user in the database.
 
     Args:
         db: Active SQLAlchemy session.
         user_in: Validated payload containing email and password.
+        role: User role, defaults to "customer". Can be "admin" or "customer".
 
     Returns:
         The newly created user record.
@@ -45,6 +46,7 @@ def create_user(db: Session, user_in: UserCreate) -> User:
     user = User(
         email=user_in.email,
         hashed_password=_hash_password(user_in.password),
+        role=role,
     )
     db.add(user)
     db.commit()
