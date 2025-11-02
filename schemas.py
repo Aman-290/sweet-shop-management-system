@@ -29,3 +29,10 @@ class Sweet(BaseModel):
     price: float
     quantity: int
     owner_id: int
+
+
+class SweetUpdate(BaseModel):
+    name: str | None = None
+    category: str | None = None
+    price: float | None = None
+    quantity: int | None = None

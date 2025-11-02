@@ -172,16 +172,29 @@ def search_sweets(
 @app.put("/api/sweets/{sweet_id}", response_model=schemas.Sweet)
 def update_sweet(
 	sweet_id: int,
-	_: dict,
+	sweet_update: schemas.SweetUpdate,
+	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> schemas.Sweet:
-	"""Update an existing sweet (placeholder implementation)."""
+	"""Update an existing sweet belonging to the authenticated user.
 
-	return schemas.Sweet(
-		id=sweet_id,
-		name="Updated Sweet",
-		category="Any",
-		price=3.00,
-		quantity=5,
-		owner_id=current_user.id,
-	)
+	Args:
+		sweet_id: Identifier of the sweet to modify.
+		sweet_update: Payload specifying fields and values to update.
+		db: Database session injected by FastAPI.
+		current_user: The authenticated user performing the update.
+
+	Returns:
+		The updated sweet serialized via the response schema.
+
+	Raises:
+		HTTPException: If the sweet does not exist or is not owned by the user.
+	"""
+
+	sweet = crud.get_sweet(db, sweet_id)
+	if sweet is None or sweet.owner_id != current_user.id:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	updated = crud.update_sweet(db, sweet_id, sweet_update)
+	assert updated is not None
+	return updated

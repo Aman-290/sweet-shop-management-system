@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from models import Sweet, User
-from schemas import SweetCreate, UserCreate
+from schemas import SweetCreate, SweetUpdate, UserCreate
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -136,3 +136,42 @@ def search_sweets(
         query = query.filter(Sweet.price <= max_price)
 
     return query.all()
+
+
+def get_sweet(db: Session, sweet_id: int) -> Sweet | None:
+    """Retrieve a single sweet by its identifier.
+
+    Args:
+        db: Active SQLAlchemy session.
+        sweet_id: Identifier of the sweet to fetch.
+
+    Returns:
+        The sweet matching the identifier, if found; otherwise None.
+    """
+
+    return db.query(Sweet).filter(Sweet.id == sweet_id).first()
+
+
+def update_sweet(db: Session, sweet_id: int, sweet_update: SweetUpdate) -> Sweet | None:
+    """Apply partial updates to a sweet record.
+
+    Args:
+        db: Active SQLAlchemy session.
+        sweet_id: Identifier of the sweet to update.
+        sweet_update: Payload containing the fields to modify.
+
+    Returns:
+        The updated sweet instance, or None if no matching record exists.
+    """
+
+    sweet = get_sweet(db, sweet_id)
+    if sweet is None:
+        return None
+
+    update_data = sweet_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(sweet, field, value)
+
+    db.commit()
+    db.refresh(sweet)
+    return sweet
