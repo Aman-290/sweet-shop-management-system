@@ -63,10 +63,10 @@ This project was built by leveraging modern AI tools as a pair programmer and de
 
 ### My AI Toolkit
 
-- **GitHub Copilot:** Integrated into VS Code for real-time code completion, generating boilerplate, and writing unit tests.
-- **ChatGPT-4 (with Codex):** Used for higher-level architectural questions, generating complex functions for the backend, and explaining concepts.
-- **Claude 3 Opus:** Used primarily for scaffolding the entire React frontend, including components, state management, and styling, as well as for bug fixing.
-- **Google Gemini:** Used for brainstorming API endpoint structures and drafting the initial structure of this documentation.
+- **GitHub Copilot:** Integrated into VS Code for real-time Agentic code completion, generating boilerplate, and writing unit tests.
+- **ChatGPT-5 (with Codex):** Used for higher-level architectural questions, generating complex functions for the backend, and explaining concepts.
+- **Claude 4.5 Sonet:** Used primarily for scaffolding the entire React frontend, including components, state management, and styling, as well as for bug fixing.
+- **Google Gemini 2.5 pro:** Used for brainstorming API endpoint structures and drafting the initial structure of this documentation.
 
 ### How I Used These Tools
 
