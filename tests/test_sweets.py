@@ -82,3 +82,36 @@ def test_get_all_sweets_success() -> None:
     assert isinstance(data, list)
     assert len(data) == 2
     assert data[0]["name"] == sweet_one["name"]
+
+
+def test_search_sweets_by_name() -> None:
+    email = f"sweet_search_{uuid4().hex}@example.com"
+    password = "password123"
+
+    register_payload = {"email": email, "password": password}
+    register_response = client.post("/api/auth/register", json=register_payload)
+    assert register_response.status_code == 201
+
+    login_payload = {"username": email, "password": password}
+    login_response = client.post("/api/auth/login", data=login_payload)
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    sweets = [
+        {"name": "Chocolate Eclair", "category": "Pastry", "price": 2.50, "quantity": 10},
+        {"name": "Caramel Tart", "category": "Pastry", "price": 3.00, "quantity": 8},
+        {"name": "Chocolate Mousse", "category": "Dessert", "price": 4.25, "quantity": 6},
+    ]
+
+    for payload in sweets:
+        response = client.post("/api/sweets", json=payload, headers=headers)
+        assert response.status_code == 201
+
+    response = client.get("/api/sweets/search", params={"name": "Chocolate"}, headers=headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2
