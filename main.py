@@ -167,3 +167,21 @@ def search_sweets(
 		max_price=max_price,
 		owner_id=current_user.id,
 	)
+
+
+@app.put("/api/sweets/{sweet_id}", response_model=schemas.Sweet)
+def update_sweet(
+	sweet_id: int,
+	_: dict,
+	current_user: models.User = Depends(security.get_current_user),
+) -> schemas.Sweet:
+	"""Update an existing sweet (placeholder implementation)."""
+
+	return schemas.Sweet(
+		id=sweet_id,
+		name="Updated Sweet",
+		category="Any",
+		price=3.00,
+		quantity=5,
+		owner_id=current_user.id,
+	)
