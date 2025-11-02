@@ -134,3 +134,38 @@ def list_sweets(
 	"""
 
 	return crud.get_sweets(db, skip=skip, limit=limit, owner_id=current_user.id)
+
+
+@app.get("/api/sweets/search", response_model=list[schemas.Sweet])
+def search_sweets(
+	name: str,
+	current_user: models.User = Depends(security.get_current_user),
+) -> list[schemas.Sweet]:
+	"""Search sweets matching the provided name fragment (placeholder implementation).
+
+	Args:
+		name: Name fragment to filter sweets by (ignored during placeholder phase).
+		current_user: The authenticated user initiating the request.
+
+	Returns:
+		A hardcoded list of sweets matching the expected response size.
+	"""
+
+	return [
+		schemas.Sweet(
+			id=1,
+			name="A Chocolate Sweet",
+			category="Pastry",
+			price=2.50,
+			quantity=10,
+			owner_id=current_user.id,
+		),
+		schemas.Sweet(
+			id=2,
+			name="Another Chocolate Sweet",
+			category="Candy",
+			price=1.00,
+			quantity=50,
+			owner_id=current_user.id,
+		),
+	]
