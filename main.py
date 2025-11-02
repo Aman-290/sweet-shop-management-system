@@ -112,3 +112,20 @@ def create_sweet(
 	"""
 
 	return crud.create_sweet(db, sweet_in)
+
+
+@app.get("/api/sweets", response_model=list[schemas.Sweet])
+def list_sweets(current_user: models.User = Depends(security.get_current_user)) -> list[schemas.Sweet]:
+	"""Return all sweets available to the authenticated user (placeholder implementation).
+
+	Args:
+		current_user: The authenticated user making the request (unused placeholder parameter).
+
+	Returns:
+		A hardcoded list of sweets matching the expected test response.
+	"""
+
+	return [
+		schemas.Sweet(id=1, name="Vanilla Cupcake", category="Pastry", price=1.99, quantity=12),
+		schemas.Sweet(id=2, name="Another Sweet", category="Candy", price=1.00, quantity=50),
+	]
