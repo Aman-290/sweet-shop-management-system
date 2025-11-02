@@ -282,3 +282,21 @@ def purchase_sweet(
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sweet is out of stock")
 
 	return result
+
+
+@app.post("/api/sweets/{sweet_id}/restock", response_model=schemas.Sweet)
+def restock_sweet(
+	sweet_id: int,
+	_: dict,
+	current_user: models.User = Depends(security.get_current_user),
+) -> schemas.Sweet:
+	"""Restock a sweet (placeholder implementation)."""
+
+	return schemas.Sweet(
+		id=sweet_id,
+		name="Restocked Sweet",
+		category="Any",
+		price=2.50,
+		quantity=60,
+		owner_id=current_user.id,
+	)
