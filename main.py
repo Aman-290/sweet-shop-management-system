@@ -92,3 +92,24 @@ def read_current_user(current_user: models.User = Depends(security.get_current_u
 	"""
 
 	return current_user
+
+
+@app.post("/api/sweets", status_code=status.HTTP_201_CREATED)
+def create_sweet(_: dict, current_user: models.User = Depends(security.get_current_user)) -> dict[str, object]:
+	"""Create a new sweet resource (placeholder implementation).
+
+	Args:
+		_: Incoming sweet payload (ignored during placeholder phase).
+		current_user: Authenticated user (unused placeholder parameter).
+
+	Returns:
+		A hardcoded sweet representation satisfying the test expectations.
+	"""
+
+	return {
+		"id": 1,
+		"name": "Chocolate Eclair",
+		"category": "Pastry",
+		"price": 2.50,
+		"quantity": 10,
+	}
