@@ -111,21 +111,26 @@ def create_sweet(
 		The persisted sweet model serialized via response schema.
 	"""
 
-	return crud.create_sweet(db, sweet_in)
+	return crud.create_sweet(db, sweet_in, owner_id=current_user.id)
 
 
 @app.get("/api/sweets", response_model=list[schemas.Sweet])
-def list_sweets(current_user: models.User = Depends(security.get_current_user)) -> list[schemas.Sweet]:
-	"""Return all sweets available to the authenticated user (placeholder implementation).
+def list_sweets(
+	skip: int = 0,
+	limit: int = 100,
+	db: Session = Depends(get_db),
+	current_user: models.User = Depends(security.get_current_user),
+) -> list[models.Sweet]:
+	"""Return sweets visible to the authenticated user with optional pagination.
 
 	Args:
-		current_user: The authenticated user making the request (unused placeholder parameter).
+		skip: Number of records to omit from the start of the result set.
+		limit: Maximum number of sweets to return.
+		db: Database session supplied by FastAPI's dependency injection.
+		current_user: The authenticated user initiating the request.
 
 	Returns:
-		A hardcoded list of sweets matching the expected test response.
+		A list of sweets persisted in the system.
 	"""
 
-	return [
-		schemas.Sweet(id=1, name="Vanilla Cupcake", category="Pastry", price=1.99, quantity=12),
-		schemas.Sweet(id=2, name="Another Sweet", category="Candy", price=1.00, quantity=50),
-	]
+	return crud.get_sweets(db, skip=skip, limit=limit, owner_id=current_user.id)

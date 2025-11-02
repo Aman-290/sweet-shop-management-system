@@ -52,12 +52,13 @@ def create_user(db: Session, user_in: UserCreate) -> User:
     return user
 
 
-def create_sweet(db: Session, sweet_in: SweetCreate) -> Sweet:
+def create_sweet(db: Session, sweet_in: SweetCreate, owner_id: int) -> Sweet:
     """Persist a sweet to the database for the given payload.
 
     Args:
         db: Active SQLAlchemy session.
         sweet_in: Validated sweet payload provided by the client.
+        owner_id: Identifier of the user creating the sweet.
 
     Returns:
         The newly created sweet record.
@@ -68,8 +69,28 @@ def create_sweet(db: Session, sweet_in: SweetCreate) -> Sweet:
         category=sweet_in.category,
         price=sweet_in.price,
         quantity=sweet_in.quantity,
+        owner_id=owner_id,
     )
     db.add(sweet)
     db.commit()
     db.refresh(sweet)
     return sweet
+
+
+def get_sweets(db: Session, skip: int = 0, limit: int = 100, owner_id: int | None = None) -> list[Sweet]:
+    """Retrieve sweets from the database with optional pagination controls.
+
+    Args:
+        db: Active SQLAlchemy session.
+        skip: Number of records to skip from the beginning of the result set.
+        limit: Maximum number of records to return.
+        owner_id: Optional user identifier to filter sweets by owner.
+
+    Returns:
+        A list of sweets ordered by insertion sequence.
+    """
+
+    query = db.query(Sweet)
+    if owner_id is not None:
+        query = query.filter(Sweet.owner_id == owner_id)
+    return query.offset(skip).limit(limit).all()
