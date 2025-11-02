@@ -151,3 +151,36 @@ def test_update_sweet_success() -> None:
     body = response.json()
     assert body["price"] == 3.00
     assert body["quantity"] == 5
+
+
+def test_delete_sweet_success() -> None:
+    email = f"sweet_delete_{uuid4().hex}@example.com"
+    password = "password123"
+
+    register_payload = {"email": email, "password": password}
+    register_response = client.post("/api/auth/register", json=register_payload)
+    assert register_response.status_code == 201
+
+    login_payload = {"username": email, "password": password}
+    login_response = client.post("/api/auth/login", data=login_payload)
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    sweet_payload = {
+        "name": "Pistachio Macaron",
+        "category": "Dessert",
+        "price": 3.50,
+        "quantity": 4,
+    }
+
+    create_response = client.post("/api/sweets", json=sweet_payload, headers=headers)
+    assert create_response.status_code == 201
+    sweet_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/api/sweets/{sweet_id}", headers=headers)
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/api/sweets/{sweet_id}", headers=headers)
+    assert get_response.status_code == 404
