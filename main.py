@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -10,6 +10,7 @@ import models
 import schemas
 import security
 from database import get_db, init_db
+from websocket_manager import manager
 
 
 @asynccontextmanager
@@ -105,6 +106,22 @@ def get_current_user_info(
 	return current_user
 
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+	"""WebSocket endpoint for real-time updates.
+	
+	Clients connect to this endpoint to receive real-time notifications
+	about changes to sweets (create, update, delete, purchase, restock).
+	"""
+	await manager.connect(websocket)
+	try:
+		while True:
+			# Keep connection alive and wait for messages
+			await websocket.receive_text()
+	except WebSocketDisconnect:
+		manager.disconnect(websocket)
+
+
 @app.get("/api/users/me", response_model=schemas.UserOut)
 def read_current_user(current_user: models.User = Depends(security.get_current_user)) -> models.User:
 	"""Return the authenticated user's profile information.
@@ -120,7 +137,7 @@ def read_current_user(current_user: models.User = Depends(security.get_current_u
 
 
 @app.post("/api/sweets", response_model=schemas.Sweet, status_code=status.HTTP_201_CREATED)
-def create_sweet(
+async def create_sweet(
 	sweet_in: schemas.SweetCreate,
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.require_admin),
@@ -138,7 +155,16 @@ def create_sweet(
 		The persisted sweet model serialized via response schema.
 	"""
 
-	return crud.create_sweet(db, sweet_in, owner_id=current_user.id)
+	sweet = crud.create_sweet(db, sweet_in, owner_id=current_user.id)
+	
+	# Broadcast the new sweet to all connected clients
+	await manager.broadcast({
+		"type": "sweet_created",
+		"data": schemas.Sweet.model_validate(sweet).model_dump()
+	})
+	
+	return sweet
+
 
 
 @app.get("/api/sweets", response_model=list[schemas.Sweet])
@@ -148,7 +174,7 @@ def list_sweets(
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> list[models.Sweet]:
-	"""Return sweets visible to the authenticated user with optional pagination.
+	"""Return all sweets in the system with optional pagination.
 
 	Args:
 		skip: Number of records to omit from the start of the result set.
@@ -157,10 +183,10 @@ def list_sweets(
 		current_user: The authenticated user initiating the request.
 
 	Returns:
-		A list of sweets persisted in the system.
+		A list of all sweets persisted in the system.
 	"""
 
-	return crud.get_sweets(db, skip=skip, limit=limit, owner_id=current_user.id)
+	return crud.get_sweets(db, skip=skip, limit=limit)
 
 
 @app.get("/api/sweets/search", response_model=list[schemas.Sweet])
@@ -192,18 +218,17 @@ def search_sweets(
 		category=category,
 		min_price=min_price,
 		max_price=max_price,
-		owner_id=current_user.id,
 	)
 
 
 @app.put("/api/sweets/{sweet_id}", response_model=schemas.Sweet)
-def update_sweet(
+async def update_sweet(
 	sweet_id: int,
 	sweet_update: schemas.SweetUpdate,
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.require_admin),
 ) -> schemas.Sweet:
-	"""Update an existing sweet belonging to the authenticated user.
+	"""Update an existing sweet.
 	
 	Admin access required.
 
@@ -217,25 +242,31 @@ def update_sweet(
 		The updated sweet serialized via the response schema.
 
 	Raises:
-		HTTPException: If the sweet does not exist or is not owned by the user.
+		HTTPException: If the sweet does not exist.
 	"""
 
 	sweet = crud.get_sweet(db, sweet_id)
-	if sweet is None or sweet.owner_id != current_user.id:
+	if sweet is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
 
 	updated = crud.update_sweet(db, sweet_id, sweet_update)
 	assert updated is not None
+	
+	# Broadcast the updated sweet to all connected clients
+	await manager.broadcast({
+		"type": "sweet_updated",
+		"data": schemas.Sweet.model_validate(updated).model_dump()
+	})
+	
 	return updated
 
-
 @app.delete("/api/sweets/{sweet_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_sweet(
+async def delete_sweet(
 	sweet_id: int,
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.require_admin),
 ) -> None:
-	"""Delete a sweet owned by the authenticated user.
+	"""Delete a sweet from the system.
 	
 	Admin access required.
 
@@ -245,14 +276,20 @@ def delete_sweet(
 		current_user: The authenticated admin user performing the deletion.
 
 	Raises:
-		HTTPException: If the sweet does not exist or is not owned by the user.
+		HTTPException: If the sweet does not exist.
 	"""
 
 	sweet = crud.get_sweet(db, sweet_id)
-	if sweet is None or sweet.owner_id != current_user.id:
+	if sweet is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
 
 	crud.delete_sweet(db, sweet_id)
+	
+	# Broadcast the deletion to all connected clients
+	await manager.broadcast({
+		"type": "sweet_deleted",
+		"data": {"id": sweet_id}
+	})
 
 
 @app.get("/api/sweets/{sweet_id}", response_model=schemas.Sweet)
@@ -261,7 +298,7 @@ def get_sweet(
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
 ) -> schemas.Sweet:
-	"""Retrieve a sweet owned by the authenticated user.
+	"""Retrieve a sweet by its ID.
 
 	Args:
 		sweet_id: Identifier of the sweet to fetch.
@@ -272,18 +309,18 @@ def get_sweet(
 		The sweet model serialized via response schema.
 
 	Raises:
-		HTTPException: If the sweet does not exist or is not owned by the user.
+		HTTPException: If the sweet does not exist.
 	"""
 
 	sweet = crud.get_sweet(db, sweet_id)
-	if sweet is None or sweet.owner_id != current_user.id:
+	if sweet is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
 
 	return sweet
 
 
 @app.post("/api/sweets/{sweet_id}/purchase", response_model=schemas.Sweet)
-def purchase_sweet(
+async def purchase_sweet(
 	sweet_id: int,
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.get_current_user),
@@ -303,7 +340,7 @@ def purchase_sweet(
 	"""
 
 	sweet = crud.get_sweet(db, sweet_id)
-	if sweet is None or sweet.owner_id != current_user.id:
+	if sweet is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
 
 	result = crud.purchase_sweet(db, sweet_id)
@@ -312,17 +349,23 @@ def purchase_sweet(
 	if result == "out_of_stock":
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sweet is out of stock")
 
+	# Broadcast the purchase to all connected clients
+	await manager.broadcast({
+		"type": "sweet_purchased",
+		"data": schemas.Sweet.model_validate(result).model_dump()
+	})
+
 	return result
 
 
 @app.post("/api/sweets/{sweet_id}/restock", response_model=schemas.Sweet)
-def restock_sweet(
+async def restock_sweet(
 	sweet_id: int,
 	restock_request: schemas.RestockRequest,
 	db: Session = Depends(get_db),
 	current_user: models.User = Depends(security.require_admin),
 ) -> schemas.Sweet:
-	"""Restock a sweet owned by the authenticated user.
+	"""Restock a sweet in the system.
 	
 	Admin access required.
 
@@ -336,15 +379,21 @@ def restock_sweet(
 		The updated sweet model serialized via response schema.
 
 	Raises:
-		HTTPException: If the sweet does not exist or is not owned by the user.
+		HTTPException: If the sweet does not exist.
 	"""
 
 	sweet = crud.get_sweet(db, sweet_id)
-	if sweet is None or sweet.owner_id != current_user.id:
+	if sweet is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
 
 	updated = crud.restock_sweet(db, sweet_id, restock_request.quantity)
 	if updated is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sweet not found")
+
+	# Broadcast the restock to all connected clients
+	await manager.broadcast({
+		"type": "sweet_restocked",
+		"data": schemas.Sweet.model_validate(updated).model_dump()
+	})
 
 	return updated

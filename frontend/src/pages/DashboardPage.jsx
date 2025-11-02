@@ -1,17 +1,52 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { sweetsAPI } from '../services/api'
 import SweetCard from '../components/SweetCard'
 import toast from 'react-hot-toast'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 const DashboardPage = () => {
   const [sweets, setSweets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchParams, setSearchParams] = useState({
     name: '',
     category: '',
     min_price: '',
     max_price: '',
   })
+
+  // Handle WebSocket messages for real-time updates
+  const handleWebSocketMessage = useCallback((message) => {
+    console.log('📡 Received:', message)
+    
+    switch (message.type) {
+      case 'sweet_created':
+        setSweets((prev) => [...prev, message.data])
+        toast.success('New sweet added!')
+        break
+      
+      case 'sweet_updated':
+      case 'sweet_purchased':
+      case 'sweet_restocked':
+        setSweets((prev) =>
+          prev.map((sweet) =>
+            sweet.id === message.data.id ? message.data : sweet
+          )
+        )
+        break
+      
+      case 'sweet_deleted':
+        setSweets((prev) => prev.filter((sweet) => sweet.id !== message.data.id))
+        toast.success('Sweet removed!')
+        break
+      
+      default:
+        console.log('Unknown message type:', message.type)
+    }
+  }, [])
+
+  // Connect to WebSocket for real-time updates
+  useWebSocket(handleWebSocketMessage)
 
   useEffect(() => {
     fetchSweets()
@@ -26,6 +61,19 @@ const DashboardPage = () => {
       toast.error('Failed to load sweets')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const data = await sweetsAPI.getAll()
+      setSweets(data)
+      toast.success('Refreshed!')
+    } catch (error) {
+      toast.error('Failed to refresh')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -60,7 +108,29 @@ const DashboardPage = () => {
   return (
     <div className='min-h-screen py-8 px-4 sm:px-6 lg:px-8'>
       <div className='max-w-7xl mx-auto'>
-        <h1 className='text-4xl font-bold text-gray-900 mb-8'>Sweet Collection</h1>
+        <div className='flex justify-between items-center mb-8'>
+          <h1 className='text-4xl font-bold text-gray-900'>Sweet Collection</h1>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className='btn-primary flex items-center gap-2'
+          >
+            <svg 
+              className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} 
+              fill='none' 
+              stroke='currentColor' 
+              viewBox='0 0 24 24'
+            >
+              <path 
+                strokeLinecap='round' 
+                strokeLinejoin='round' 
+                strokeWidth={2} 
+                d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' 
+              />
+            </svg>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
         
         {/* Search/Filter Section */}
         <div className='card p-6 mb-8'>

@@ -1,13 +1,15 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { sweetsAPI } from '../services/api'
 import SweetFormModal from '../components/SweetFormModal'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import RestockModal from '../components/RestockModal'
 import toast from 'react-hot-toast'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 const AdminPage = () => {
   const [sweets, setSweets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [formModal, setFormModal] = useState({ isOpen: false, mode: 'create', sweet: null })
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, sweet: null })
   const [restockModal, setRestockModal] = useState({ isOpen: false, sweet: null })
@@ -27,6 +29,48 @@ const AdminPage = () => {
       setLoading(false)
     }
   }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const data = await sweetsAPI.getAll()
+      setSweets(data)
+      toast.success('Refreshed!')
+    } catch (error) {
+      toast.error('Failed to refresh')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const handleWebSocketMessage = useCallback((message) => {
+    switch (message.type) {
+      case 'sweet_created':
+        setSweets(prev => [...prev, message.data])
+        toast.success('New sweet added!')
+        break
+      case 'sweet_updated':
+        setSweets(prev => prev.map(s => s.id === message.data.id ? message.data : s))
+        toast.success('Sweet updated!')
+        break
+      case 'sweet_deleted':
+        setSweets(prev => prev.filter(s => s.id !== message.data.id))
+        toast.success('Sweet deleted!')
+        break
+      case 'sweet_purchased':
+        setSweets(prev => prev.map(s => s.id === message.data.id ? message.data : s))
+        toast.info('Sweet purchased by customer!')
+        break
+      case 'sweet_restocked':
+        setSweets(prev => prev.map(s => s.id === message.data.id ? message.data : s))
+        toast.success('Sweet restocked!')
+        break
+      default:
+        break
+    }
+  }, [])
+
+  useWebSocket(handleWebSocketMessage)
 
   const handleCreate = async (sweetData) => {
     try {
@@ -77,12 +121,34 @@ const AdminPage = () => {
       <div className='max-w-7xl mx-auto'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-4xl font-bold text-gray-900'>Admin Management</h1>
-          <button
-            onClick={() => setFormModal({ isOpen: true, mode: 'create', sweet: null })}
-            className='btn-primary'
-          >
-             Add New Sweet
-          </button>
+          <div className='flex gap-3'>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className='btn-secondary flex items-center gap-2'
+            >
+              <svg 
+                className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} 
+                fill='none' 
+                stroke='currentColor' 
+                viewBox='0 0 24 24'
+              >
+                <path 
+                  strokeLinecap='round' 
+                  strokeLinejoin='round' 
+                  strokeWidth={2} 
+                  d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' 
+                />
+              </svg>
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <button
+              onClick={() => setFormModal({ isOpen: true, mode: 'create', sweet: null })}
+              className='btn-primary'
+            >
+               Add New Sweet
+            </button>
+          </div>
         </div>
 
         {loading ? (
